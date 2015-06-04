@@ -23,6 +23,7 @@ import java.util.*;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.StorageType;
+import org.apache.hadoop.hdfs.StorageTypeModifier;
 import org.junit.Test;
 
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DATANODE_DATA_DIR_KEY;
@@ -83,8 +84,57 @@ public class TestDataDirs {
     assertThat(locations.get(0).getUri(), is(dir0.toURI()));
     assertThat(locations.get(1).getStorageType(), is(StorageType.DISK));
     assertThat(locations.get(1).getUri(), is(dir1.toURI()));
+    
+    // Verify that a valid string that contains a storage type modifier
+    // is correctly parsed, and that storage type modifier is not case-sensitive
+    String locations4 = "[disk+sHaRed]/dir0,[ARCHIVE+SHARED]/dir1,[sSd+shared]/dir2,[disK]/dir3,[ram_disk]/dir4";
+    conf.set(DFS_DATANODE_DATA_DIR_KEY, locations4);
+    locations = DataNode.getStorageLocations(conf);
+    assertThat(locations.size(), is(5));
+    assertThat(locations.get(0).getStorageType(), is(StorageType.DISK));
+    assertThat(locations.get(0).getStorageTypeModifier(), is(StorageTypeModifier.SHARED));
+    assertThat(locations.get(0).getUri(), is(dir0.toURI()));
+    assertThat(locations.get(1).getStorageType(), is(StorageType.ARCHIVE));
+    assertThat(locations.get(1).getStorageTypeModifier(), is(StorageTypeModifier.SHARED));
+    assertThat(locations.get(1).getUri(), is(dir1.toURI()));
+    assertThat(locations.get(2).getStorageType(), is(StorageType.SSD));
+    assertThat(locations.get(2).getStorageTypeModifier(), is(StorageTypeModifier.SHARED));
+    assertThat(locations.get(2).getUri(), is(dir2.toURI()));
+    assertThat(locations.get(3).getStorageType(), is(StorageType.DISK));
+    assertThat(locations.get(3).getStorageTypeModifier(), is(StorageTypeModifier.NONE));
+    assertThat(locations.get(3).getUri(), is(dir3.toURI()));
+    assertThat(locations.get(4).getStorageType(), is(StorageType.RAM_DISK));
+    assertThat(locations.get(4).getStorageTypeModifier(), is(StorageTypeModifier.NONE));
+    assertThat(locations.get(4).getUri(), is(dir4.toURI()));
+    
+    // Verify that an unrecognized storage type modifier result in an exception.
+    String locations5 = "[ARCHIVE+BadModifier]/dir0,[ssd+shared]/dir1,[disk]/dir2";
+    conf.set(DFS_DATANODE_DATA_DIR_KEY, locations5);
+    try {
+      locations = DataNode.getStorageLocations(conf);
+      fail();
+    } catch(IllegalArgumentException iae) {
+      DataNode.LOG.info("The exception is expected.", iae);
+    }
   }
 
+  @Test (timeout = 30000)
+  public void testDataDirToString() throws Throwable {
+    Configuration conf = new Configuration();
+    List<StorageLocation> locations;
+    File dir0 = new File("/dir0");
+    File dir1 = new File("/dir1");
+
+    // Verify that toString methods of StorageLocation
+    // return valid string
+    String locations1 = "[disk]/dir0,[DISK+shared]/dir1";
+    conf.set(DFS_DATANODE_DATA_DIR_KEY, locations1);
+    locations = DataNode.getStorageLocations(conf);
+    assertThat(locations.size(), is(2));
+    assertThat(locations.get(0).toString(), is("[DISK]" + dir0.toURI()));
+    assertThat(locations.get(1).toString(), is("[DISK+SHARED]" + dir1.toURI()));
+  }
+  
   @Test (timeout = 30000)
   public void testDataDirValidation() throws Throwable {
     

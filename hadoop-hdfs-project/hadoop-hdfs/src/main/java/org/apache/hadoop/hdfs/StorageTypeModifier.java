@@ -18,7 +18,6 @@
 
 package org.apache.hadoop.hdfs;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -26,46 +25,22 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 
 /**
- * Defines the types of supported storage media. The default storage
- * medium is assumed to be DISK.
+ * Defines the modifiers of supported types of storage media. The default storage
+ * modifier is assumed to be NONE.
  */
 @InterfaceAudience.Public
 @InterfaceStability.Unstable
-public enum StorageType {
-  DISK(false),
-  SSD(false),
-  ARCHIVE(false),
-  RAM_DISK(true);
+public enum StorageTypeModifier {
+  NONE,
+  SHARED;
 
-  private final boolean isTransient;
+  public static final StorageTypeModifier DEFAULT = NONE;
 
-  public static final StorageType DEFAULT = DISK;
+  public static final StorageTypeModifier[] EMPTY_ARRAY = {};
 
-  public static final StorageType[] EMPTY_ARRAY = {};
+  private static final StorageTypeModifier[] VALUES = values();
 
-  private static final StorageType[] VALUES = values();
-
-  StorageType(boolean isTransient) { this.isTransient = isTransient; }
-
-  public boolean isTransient() {
-    return isTransient;
-  }
-
-  public boolean isMovable() {
-    return !isTransient;
-  }
-
-  public static List<StorageType> asList() {
+  public static List<StorageTypeModifier> asList() {
     return Arrays.asList(VALUES);
-  }
-
-  public static List<StorageType> getMovableTypes() {
-    List<StorageType> movableTypes = new ArrayList<StorageType>();
-    for (StorageType t : VALUES) {
-      if ( t.isTransient == false ) {
-        movableTypes.add(t);
-      }
-    }
-    return movableTypes;
   }
 }
