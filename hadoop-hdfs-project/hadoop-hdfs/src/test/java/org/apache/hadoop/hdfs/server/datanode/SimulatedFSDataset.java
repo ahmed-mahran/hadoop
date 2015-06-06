@@ -37,6 +37,7 @@ import javax.management.StandardMBean;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.StorageType;
+import org.apache.hadoop.hdfs.StorageTypeModifier;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.BlockListAsLongs;
 import org.apache.hadoop.hdfs.protocol.BlockLocalPathInfo;
@@ -384,7 +385,7 @@ public class SimulatedFSDataset implements FsDatasetSpi<FsVolumeSpi> {
       capacity = cap;
       dnStorage = new DatanodeStorage(
           "SimulatedStorage-" + DatanodeStorage.generateUuid(),
-          state, StorageType.DEFAULT);
+          state, StorageType.DEFAULT, StorageTypeModifier.DEFAULT);
     }
     
     synchronized void addBlockPool(String bpid) {
@@ -464,6 +465,11 @@ public class SimulatedFSDataset implements FsDatasetSpi<FsVolumeSpi> {
       return null;
     }
 
+    @Override
+    public StorageTypeModifier getStorageTypeModifier() {
+      return null;
+    }
+    
     @Override
     public boolean isTransientStorage() {
       return false;

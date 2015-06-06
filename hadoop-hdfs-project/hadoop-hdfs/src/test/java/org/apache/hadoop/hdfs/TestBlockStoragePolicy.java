@@ -1111,9 +1111,11 @@ public class TestBlockStoragePolicy {
     final String[] hosts = {"host1", "host2", "host3"};
     final StorageType[] types = {StorageType.DISK, StorageType.SSD,
         StorageType.ARCHIVE};
+    final StorageTypeModifier[] typeModifiers = {StorageTypeModifier.SHARED,
+        StorageTypeModifier.NONE, StorageTypeModifier.SHARED};
 
     final DatanodeStorageInfo[] storages = DFSTestUtil
-        .createDatanodeStorageInfos(3, racks, hosts, types);
+        .createDatanodeStorageInfos(3, racks, hosts, types, typeModifiers);
     final DatanodeDescriptor[] dataNodes = DFSTestUtil
         .toDatanodeDescriptor(storages);
 

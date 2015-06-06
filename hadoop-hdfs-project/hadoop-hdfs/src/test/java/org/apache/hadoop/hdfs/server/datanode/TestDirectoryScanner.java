@@ -566,6 +566,11 @@ public class TestDirectoryScanner {
     }
 
     @Override
+    public StorageTypeModifier getStorageTypeModifier() {
+      return StorageTypeModifier.DEFAULT;
+    }
+    
+    @Override
     public String getStorageID() {
       return "";
     }

@@ -278,7 +278,8 @@ public class BlockManagerTestUtil {
     ArrayList<StorageReport> reports = new ArrayList<StorageReport>();
     for (DatanodeStorageInfo storage : dnd.getStorageInfos()) {
       DatanodeStorage dns = new DatanodeStorage(
-          storage.getStorageID(), storage.getState(), storage.getStorageType());
+          storage.getStorageID(), storage.getState(), storage.getStorageType()
+          , storage.getStorageTypeModifier());
       StorageReport report = new StorageReport(
           dns ,false, storage.getCapacity(),
           storage.getDfsUsed(), storage.getRemaining(),
