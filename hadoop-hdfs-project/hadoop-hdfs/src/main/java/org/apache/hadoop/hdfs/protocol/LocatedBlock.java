@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.hdfs.StorageType;
+import org.apache.hadoop.hdfs.StorageTypeModifier;
 import org.apache.hadoop.hdfs.security.token.block.BlockTokenIdentifier;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeStorageInfo;
 import org.apache.hadoop.security.token.Token;
@@ -46,6 +47,8 @@ public class LocatedBlock {
   private final String[] storageIDs;
   // Storage type for each replica, if reported.
   private final StorageType[] storageTypes;
+  //Storage type modifier for each replica, if reported.
+  private final StorageTypeModifier[] storageTypeModifiers;
   // corrupt flag is true if all of the replicas of a block are corrupt.
   // else false. If block has few corrupt replicas, they are filtered and 
   // their locations are not part of this object
@@ -65,7 +68,7 @@ public class LocatedBlock {
 
   public LocatedBlock(ExtendedBlock b, DatanodeInfo[] locs, long startOffset, 
                       boolean corrupt) {
-    this(b, locs, null, null, startOffset, corrupt, EMPTY_LOCS);
+    this(b, locs, null, null, null, startOffset, corrupt, EMPTY_LOCS);
   }
 
   public LocatedBlock(ExtendedBlock b, DatanodeStorageInfo[] storages) {
@@ -73,8 +76,9 @@ public class LocatedBlock {
   }
 
   public LocatedBlock(ExtendedBlock b, DatanodeInfo[] locs,
-                      String[] storageIDs, StorageType[] storageTypes) {
-    this(b, locs, storageIDs, storageTypes, -1, false, EMPTY_LOCS);
+                      String[] storageIDs, StorageType[] storageTypes,
+                      StorageTypeModifier[] storageTypeModifiers) {
+    this(b, locs, storageIDs, storageTypes, storageTypeModifiers, -1, false, EMPTY_LOCS);
   }
 
   public LocatedBlock(ExtendedBlock b, DatanodeStorageInfo[] storages,
@@ -82,12 +86,13 @@ public class LocatedBlock {
     this(b, DatanodeStorageInfo.toDatanodeInfos(storages),
         DatanodeStorageInfo.toStorageIDs(storages),
         DatanodeStorageInfo.toStorageTypes(storages),
+        DatanodeStorageInfo.toStorageTypeModifiers(storages),
         startOffset, corrupt, EMPTY_LOCS); // startOffset is unknown
   }
 
   public LocatedBlock(ExtendedBlock b, DatanodeInfo[] locs, String[] storageIDs,
-                      StorageType[] storageTypes, long startOffset,
-                      boolean corrupt, DatanodeInfo[] cachedLocs) {
+                      StorageType[] storageTypes, StorageTypeModifier[] storageTypeModifiers,
+                      long startOffset, boolean corrupt, DatanodeInfo[] cachedLocs) {
     this.b = b;
     this.offset = startOffset;
     this.corrupt = corrupt;
@@ -98,6 +103,7 @@ public class LocatedBlock {
     }
     this.storageIDs = storageIDs;
     this.storageTypes = storageTypes;
+    this.storageTypeModifiers = storageTypeModifiers;
 
     if (cachedLocs == null || cachedLocs.length == 0) {
       this.cachedLocs = EMPTY_LOCS;
@@ -124,6 +130,10 @@ public class LocatedBlock {
 
   public StorageType[] getStorageTypes() {
     return storageTypes;
+  }
+  
+  public StorageTypeModifier[] getStorageTypeModifiers() {
+    return storageTypeModifiers;
   }
   
   public String[] getStorageIDs() {
@@ -191,6 +201,8 @@ public class LocatedBlock {
             (storageIDs != null ? Arrays.asList(storageIDs) : null)
         + "; storageTypes=" +
             (storageTypes != null ? Arrays.asList(storageTypes) : null)
+        + "; storageTypeModifiers=" +
+            (storageTypeModifiers != null ? Arrays.asList(storageTypeModifiers) : null)
         + "}";
   }
 }

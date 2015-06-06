@@ -24,6 +24,7 @@ import java.util.List;
 import com.google.common.annotations.VisibleForTesting;
 
 import org.apache.hadoop.hdfs.StorageType;
+import org.apache.hadoop.hdfs.StorageTypeModifier;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeStorage;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeStorage.State;
@@ -71,10 +72,19 @@ public class DatanodeStorageInfo {
     }
     return storageTypes;
   }
+  
+  public static StorageTypeModifier[] toStorageTypeModifiers(DatanodeStorageInfo[] storages) {
+    StorageTypeModifier[] storageTypeModifiers = new StorageTypeModifier[storages.length];
+    for(int i = 0; i < storageTypeModifiers.length; i++) {
+      storageTypeModifiers[i] = storages[i].getStorageTypeModifier();
+    }
+    return storageTypeModifiers;
+  }
 
   public void updateFromStorage(DatanodeStorage storage) {
     state = storage.getState();
     storageType = storage.getStorageType();
+    storageTypeModifier = storage.getStorageTypeModifier();
   }
 
   /**
@@ -105,6 +115,7 @@ public class DatanodeStorageInfo {
   private final DatanodeDescriptor dn;
   private final String storageID;
   private StorageType storageType;
+  private StorageTypeModifier storageTypeModifier;
   private State state;
 
   private long capacity;
@@ -138,6 +149,7 @@ public class DatanodeStorageInfo {
     this.dn = dn;
     this.storageID = s.getStorageID();
     this.storageType = s.getStorageType();
+    this.storageTypeModifier = s.getStorageTypeModifier();
     this.state = s.getState();
   }
 
@@ -197,6 +209,10 @@ public class DatanodeStorageInfo {
 
   StorageType getStorageType() {
     return storageType;
+  }
+  
+  StorageTypeModifier getStorageTypeModifier() {
+    return storageTypeModifier;
   }
 
   long getCapacity() {
@@ -313,12 +329,16 @@ public class DatanodeStorageInfo {
 
   @Override
   public String toString() {
-    return "[" + storageType + "]" + storageID + ":" + state + ":" + dn;
+    if (storageTypeModifier.equals(StorageTypeModifier.NONE)) {
+      return "[" + storageType + "]" + storageID + ":" + state + ":" + dn;
+    } else {
+      return "[" + storageType + "+" + storageTypeModifier + "]" + storageID + ":" + state + ":" + dn;
+    }
   }
   
   StorageReport toStorageReport() {
     return new StorageReport(
-        new DatanodeStorage(storageID, state, storageType),
+        new DatanodeStorage(storageID, state, storageType, storageTypeModifier),
         false, capacity, dfsUsed, remaining, blockPoolUsed);
   }
 
@@ -342,6 +362,26 @@ public class DatanodeStorageInfo {
       };
   }
 
+  static Iterable<StorageTypeModifier> toStorageTypeModifiers(
+      final Iterable<DatanodeStorageInfo> infos) {
+    return new Iterable<StorageTypeModifier>() {
+        @Override
+        public Iterator<StorageTypeModifier> iterator() {
+          return new Iterator<StorageTypeModifier>() {
+            final Iterator<DatanodeStorageInfo> i = infos.iterator();
+            @Override
+            public boolean hasNext() {return i.hasNext();}
+            @Override
+            public StorageTypeModifier next() {return i.next().getStorageTypeModifier();}
+            @Override
+            public void remove() {
+              throw new UnsupportedOperationException();
+            }
+          };
+        }
+      };
+  }
+  
   /** @return the first {@link DatanodeStorageInfo} corresponding to
    *          the given datanode
    */

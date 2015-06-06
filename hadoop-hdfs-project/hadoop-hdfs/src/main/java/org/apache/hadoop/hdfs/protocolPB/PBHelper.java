@@ -49,6 +49,7 @@ import org.apache.hadoop.ha.proto.HAServiceProtocolProtos;
 import org.apache.hadoop.hdfs.protocol.BlockStoragePolicy;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.StorageType;
+import org.apache.hadoop.hdfs.StorageTypeModifier;
 import org.apache.hadoop.hdfs.inotify.Event;
 import org.apache.hadoop.hdfs.inotify.EventsList;
 import org.apache.hadoop.hdfs.protocol.Block;
@@ -165,6 +166,7 @@ import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.SnapshottableDirectoryLi
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.SnapshottableDirectoryStatusProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.StorageInfoProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.StorageReportProto;
+import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.StorageTypeModifierProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.StorageTypeProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.StorageTypesProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.StorageUuidsProto;
@@ -431,6 +433,7 @@ public class PBHelper {
         .addAllDatanodeUuids(Arrays.asList(blk.getDatanodeUuids()))
         .addAllStorageUuids(Arrays.asList(blk.getStorageIDs()))
         .addAllStorageTypes(convertStorageTypes(blk.getStorageTypes()))
+        .addAllStorageTypeModifiers(convertStorageTypeModifiers(blk.getStorageTypeModifiers()))
         .build();
   }
 
@@ -438,10 +441,12 @@ public class PBHelper {
     final List<String> datanodeUuids = b.getDatanodeUuidsList();
     final List<String> storageUuids = b.getStorageUuidsList();
     final List<StorageTypeProto> storageTypes = b.getStorageTypesList();
+    final List<StorageTypeModifierProto> storageTypeModifiers = b.getStorageTypeModifiersList();
     return new BlockWithLocations(convert(b.getBlock()),
         datanodeUuids.toArray(new String[datanodeUuids.size()]),
         storageUuids.toArray(new String[storageUuids.size()]),
-        convertStorageTypes(storageTypes, storageUuids.size()));
+        convertStorageTypes(storageTypes, storageUuids.size()),
+        convertStorageTypeModifiers(storageTypeModifiers, storageUuids.size()));
   }
 
   public static BlocksWithLocationsProto convert(BlocksWithLocations blks) {
@@ -775,6 +780,12 @@ public class PBHelper {
         builder.addStorageTypes(PBHelper.convertStorageType(storageTypes[i]));
       }
     }
+    StorageTypeModifier[] storageTypeModifiers = b.getStorageTypeModifiers();
+    if (storageTypeModifiers != null) {
+      for (int i = 0; i < storageTypeModifiers.length; ++i) {
+        builder.addStorageTypeModifiers(PBHelper.convertStorageTypeModifier(storageTypeModifiers[i]));
+      }
+    }
     final String[] storageIDs = b.getStorageIDs();
     if (storageIDs != null) {
       builder.addAllStorageIDs(Arrays.asList(storageIDs));
@@ -795,6 +806,9 @@ public class PBHelper {
 
     final StorageType[] storageTypes = convertStorageTypes(
         proto.getStorageTypesList(), locs.size());
+    
+    final StorageTypeModifier[] storageTypeModifiers = convertStorageTypeModifiers(
+        proto.getStorageTypeModifiersList(), locs.size());
 
     final int storageIDsCount = proto.getStorageIDsCount();
     final String[] storageIDs;
@@ -815,7 +829,7 @@ public class PBHelper {
     }
 
     LocatedBlock lb = new LocatedBlock(PBHelper.convert(proto.getB()), targets,
-        storageIDs, storageTypes, proto.getOffset(), proto.getCorrupt(),
+        storageIDs, storageTypes, storageTypeModifiers, proto.getOffset(), proto.getCorrupt(),
         cachedLocs.toArray(new DatanodeInfo[0]));
     lb.setBlockToken(PBHelper.convert(proto.getBlockToken()));
 
@@ -1755,6 +1769,7 @@ public class PBHelper {
     return DatanodeStorageProto.newBuilder()
         .setState(PBHelper.convertState(s.getState()))
         .setStorageType(PBHelper.convertStorageType(s.getStorageType()))
+        .setStorageTypeModifier(PBHelper.convertStorageTypeModifier(s.getStorageTypeModifier()))
         .setStorageUuid(s.getStorageID()).build();
   }
 
@@ -1772,6 +1787,11 @@ public class PBHelper {
       StorageType[] types) {
     return convertStorageTypes(types, 0);
   }
+  
+  public static List<StorageTypeModifierProto> convertStorageTypeModifiers(
+      StorageTypeModifier[] types) {
+    return convertStorageTypeModifiers(types, 0);
+  }
 
   public static List<StorageTypeProto> convertStorageTypes(
       StorageType[] types, int startIdx) {
@@ -1782,6 +1802,19 @@ public class PBHelper {
         types.length);
     for (int i = startIdx; i < types.length; ++i) {
       protos.add(convertStorageType(types[i]));
+    }
+    return protos; 
+  }
+  
+  public static List<StorageTypeModifierProto> convertStorageTypeModifiers(
+      StorageTypeModifier[] types, int startIdx) {
+    if (types == null) {
+      return null;
+    }
+    final List<StorageTypeModifierProto> protos = new ArrayList<StorageTypeModifierProto>(
+        types.length);
+    for (int i = startIdx; i < types.length; ++i) {
+      protos.add(convertStorageTypeModifier(types[i]));
     }
     return protos; 
   }
@@ -1801,11 +1834,24 @@ public class PBHelper {
           "BUG: StorageType not found, type=" + type);
     }
   }
+  
+  public static StorageTypeModifierProto convertStorageTypeModifier(StorageTypeModifier type) {
+    switch(type) {
+    case NONE:
+      return StorageTypeModifierProto.NONE;
+    case SHARED:
+      return StorageTypeModifierProto.SHARED;
+    default:
+      throw new IllegalStateException(
+          "BUG: StorageTypeModifier not found, type=" + type);
+    }
+  }
 
   public static DatanodeStorage convert(DatanodeStorageProto s) {
     return new DatanodeStorage(s.getStorageUuid(),
                                PBHelper.convertState(s.getState()),
-                               PBHelper.convertStorageType(s.getStorageType()));
+                               PBHelper.convertStorageType(s.getStorageType()),
+                               PBHelper.convertStorageTypeModifier(s.getStorageTypeModifier()));
   }
 
   private static State convertState(StorageState state) {
@@ -1834,6 +1880,18 @@ public class PBHelper {
     }
   }
 
+  public static StorageTypeModifier convertStorageTypeModifier(StorageTypeModifierProto type) {
+    switch(type) {
+      case NONE:
+        return StorageTypeModifier.NONE;
+      case SHARED:
+        return StorageTypeModifier.SHARED;
+      default:
+        throw new IllegalStateException(
+            "BUG: StorageTypeModifierProto not found, type=" + type);
+    }
+  }
+  
   public static StorageType[] convertStorageTypes(
       List<StorageTypeProto> storageTypesList, int expectedSize) {
     final StorageType[] storageTypes = new StorageType[expectedSize];
@@ -1846,6 +1904,20 @@ public class PBHelper {
       }
     }
     return storageTypes;
+  }
+  
+  public static StorageTypeModifier[] convertStorageTypeModifiers(
+      List<StorageTypeModifierProto> storageTypeModifiersList, int expectedSize) {
+    final StorageTypeModifier[] storageTypeModifiers = new StorageTypeModifier[expectedSize];
+    if (storageTypeModifiersList.size() != expectedSize) { // missing storage type modifiers
+      Preconditions.checkState(storageTypeModifiersList.isEmpty());
+      Arrays.fill(storageTypeModifiers, StorageTypeModifier.DEFAULT);
+    } else {
+      for (int i = 0; i < storageTypeModifiers.length; ++i) {
+        storageTypeModifiers[i] = convertStorageTypeModifier(storageTypeModifiersList.get(i));
+      }
+    }
+    return storageTypeModifiers;
   }
 
   public static StorageReportProto convert(StorageReport r) {

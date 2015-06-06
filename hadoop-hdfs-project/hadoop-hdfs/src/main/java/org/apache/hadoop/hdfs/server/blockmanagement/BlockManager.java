@@ -47,6 +47,7 @@ import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.HAUtil;
 import org.apache.hadoop.hdfs.StorageType;
+import org.apache.hadoop.hdfs.StorageTypeModifier;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.BlockListAsLongs;
 import org.apache.hadoop.hdfs.protocol.BlockListAsLongs.BlockReportIterator;
@@ -54,7 +55,6 @@ import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.fs.FileEncryptionInfo;
-
 import org.apache.hadoop.hdfs.protocol.LocatedBlock;
 import org.apache.hadoop.hdfs.protocol.LocatedBlocks;
 import org.apache.hadoop.hdfs.protocol.UnregisteredNodeException;
@@ -2937,14 +2937,16 @@ public class BlockManager {
       final String[] datanodeUuids = new String[locations.size()];
       final String[] storageIDs = new String[datanodeUuids.length];
       final StorageType[] storageTypes = new StorageType[datanodeUuids.length];
+      final StorageTypeModifier[] storageTypeModifiers = new StorageTypeModifier[datanodeUuids.length];
       for(int i = 0; i < locations.size(); i++) {
         final DatanodeStorageInfo s = locations.get(i);
         datanodeUuids[i] = s.getDatanodeDescriptor().getDatanodeUuid();
         storageIDs[i] = s.getStorageID();
         storageTypes[i] = s.getStorageType();
+        storageTypeModifiers[i] = s.getStorageTypeModifier();
       }
       results.add(new BlockWithLocations(block, datanodeUuids, storageIDs,
-          storageTypes));
+          storageTypes, storageTypeModifiers));
       return block.getNumBytes();
     }
   }

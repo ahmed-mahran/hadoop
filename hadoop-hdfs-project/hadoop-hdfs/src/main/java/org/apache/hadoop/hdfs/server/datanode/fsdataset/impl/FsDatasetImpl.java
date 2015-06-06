@@ -48,6 +48,7 @@ import javax.management.StandardMBean;
 
 import com.google.common.collect.Lists;
 import com.google.common.base.Preconditions;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceAudience;
@@ -56,6 +57,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.ExtendedBlockId;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.StorageType;
+import org.apache.hadoop.hdfs.StorageTypeModifier;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.BlockListAsLongs;
 import org.apache.hadoop.hdfs.protocol.BlockLocalPathInfo;
@@ -89,7 +91,9 @@ import org.apache.hadoop.hdfs.server.datanode.fsdataset.ReplicaOutputStreams;
 import org.apache.hadoop.hdfs.server.datanode.fsdataset.RollingLogs;
 import org.apache.hadoop.hdfs.server.datanode.fsdataset.RoundRobinVolumeChoosingPolicy;
 import org.apache.hadoop.hdfs.server.datanode.fsdataset.VolumeChoosingPolicy;
+
 import static org.apache.hadoop.hdfs.server.datanode.fsdataset.impl.RamDiskReplicaTracker.RamDiskReplica;
+
 import org.apache.hadoop.hdfs.server.datanode.metrics.FSDatasetMBean;
 import org.apache.hadoop.hdfs.server.protocol.BlockRecoveryCommand.RecoveringBlock;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeStorage;
@@ -297,12 +301,15 @@ class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
     final File dir = sd.getCurrentDir();
     final StorageType storageType =
         getStorageTypeFromLocations(dataLocations, sd.getRoot());
+    final StorageTypeModifier storageTypeModifier =
+        getStorageTypeModifierFromLocations(dataLocations, sd.getRoot());
 
     // If IOException raises from FsVolumeImpl() or getVolumeMap(), there is
     // nothing needed to be rolled back to make various data structures, e.g.,
     // storageMap and asyncDiskService, consistent.
     FsVolumeImpl fsVolume = new FsVolumeImpl(
-        this, sd.getStorageUuid(), dir, this.conf, storageType);
+        this, sd.getStorageUuid(), dir, this.conf,
+        storageType, storageTypeModifier);
     ReplicaMap tempVolumeMap = new ReplicaMap(this);
     fsVolume.getVolumeMap(tempVolumeMap, ramDiskReplicaTracker);
 
@@ -311,10 +318,11 @@ class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
     storageMap.put(sd.getStorageUuid(),
         new DatanodeStorage(sd.getStorageUuid(),
             DatanodeStorage.State.NORMAL,
-            storageType));
+            storageType, storageTypeModifier));
     asyncDiskService.addVolume(sd.getCurrentDir());
 
-    LOG.info("Added volume - " + dir + ", StorageType: " + storageType);
+    LOG.info("Added volume - " + dir + ", StorageType: " + storageType 
+        + ", StorageTypeModifier: " + storageTypeModifier);
   }
 
   private void addVolumeAndBlockPool(Collection<StorageLocation> dataLocations,
@@ -323,9 +331,12 @@ class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
     final File dir = sd.getCurrentDir();
     final StorageType storageType =
         getStorageTypeFromLocations(dataLocations, sd.getRoot());
+    final StorageTypeModifier storageTypeModifier =
+        getStorageTypeModifierFromLocations(dataLocations, sd.getRoot());
 
     final FsVolumeImpl fsVolume = new FsVolumeImpl(
-        this, sd.getStorageUuid(), dir, this.conf, storageType);
+        this, sd.getStorageUuid(), dir, this.conf,
+        storageType, storageTypeModifier);
     final ReplicaMap tempVolumeMap = new ReplicaMap(fsVolume);
 
     List<IOException> exceptions = Lists.newArrayList();
@@ -348,11 +359,12 @@ class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
     storageMap.put(sd.getStorageUuid(),
         new DatanodeStorage(sd.getStorageUuid(),
             DatanodeStorage.State.NORMAL,
-            storageType));
+            storageType, storageTypeModifier));
     asyncDiskService.addVolume(sd.getCurrentDir());
     volumes.addVolume(fsVolume);
 
-    LOG.info("Added volume - " + dir + ", StorageType: " + storageType);
+    LOG.info("Added volume - " + dir + ", StorageType: " + storageType
+        + ", StorageTypeModifier: " + storageTypeModifier);
   }
 
   /**
@@ -481,6 +493,16 @@ class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
       }
     }
     return StorageType.DEFAULT;
+  }
+  
+  private StorageTypeModifier getStorageTypeModifierFromLocations(
+      Collection<StorageLocation> dataLocations, File dir) {
+    for (StorageLocation dataLocation : dataLocations) {
+      if (dataLocation.getFile().equals(dir)) {
+        return dataLocation.getStorageTypeModifier();
+      }
+    }
+    return StorageTypeModifier.DEFAULT;
   }
 
   /**

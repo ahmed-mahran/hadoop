@@ -111,6 +111,7 @@ message DatanodeStorageProto {
   required string storageUuid = 1;
   optional StorageState state = 2 [default = NORMAL];
   optional StorageTypeProto storageType = 3 [default = DISK];
+  optional StorageTypeModifierProto storageTypeModifier = 4 [default = NONE];
 }
 
 message StorageReportProto {
@@ -170,6 +171,22 @@ message StorageTypesProto {
 }
 
 /**
+ * Storage type modifiers.
+ */
+enum StorageTypeModifierProto {
+  NONE = 1;
+  SHARED = 2;
+}
+
+/**
+ * A list of storage type modifiers. 
+ */
+message StorageTypeModifiersProto {
+  repeated StorageTypeModifierProto storageTypeModifiers = 1;
+}
+
+
+/**
  * Block replica storage policy.
  */
 message BlockStoragePolicyProto {
@@ -204,7 +221,8 @@ message LocatedBlockProto {
   required hadoop.common.TokenProto blockToken = 5;
   repeated bool isCached = 6 [packed=true]; // if a location in locs is cached
   repeated StorageTypeProto storageTypes = 7;
-  repeated string storageIDs = 8;
+  repeated StorageTypeModifierProto storageTypeModifiers = 8;
+  repeated string storageIDs = 9;
 }
 
 message DataEncryptionKeyProto {
@@ -483,6 +501,7 @@ message BlockWithLocationsProto {
   repeated string datanodeUuids = 2; // Datanodes with replicas of the block
   repeated string storageUuids = 3;  // Storages with replicas of the block
   repeated StorageTypeProto storageTypes = 4;
+  repeated StorageTypeModifierProto storageTypeModifiers = 5;
 }
 
 /**
