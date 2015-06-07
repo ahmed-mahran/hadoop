@@ -113,6 +113,11 @@ public class BlockReaderFactory implements ShortCircuitReplicaCreator {
    * StorageType of replica on DataNode.
    */
   private StorageType storageType;
+  
+  /**
+   * StorageTypeModifier of the storage media of replica on DataNode.
+   */
+  private StorageTypeModifier storageTypeModifier;
 
   /**
    * If false, we won't try short-circuit local reads.
@@ -208,6 +213,11 @@ public class BlockReaderFactory implements ShortCircuitReplicaCreator {
 
   public BlockReaderFactory setStorageType(StorageType storageType) {
     this.storageType = storageType;
+    return this;
+  }
+  
+  public BlockReaderFactory setStorageTypeModifier(StorageTypeModifier storageTypeModifier) {
+    this.storageTypeModifier = storageTypeModifier;
     return this;
   }
 
@@ -346,10 +356,12 @@ public class BlockReaderFactory implements ShortCircuitReplicaCreator {
     if (LOG.isTraceEnabled()) {
       LOG.trace(this + ": trying to construct BlockReaderLocalLegacy");
     }
-    if (!DFSClient.isLocalAddress(inetSocketAddress)) {
+    if (!StorageTypeModifier.SHARED.equals(storageTypeModifier)
+        && !DFSClient.isLocalAddress(inetSocketAddress)) {
       if (LOG.isTraceEnabled()) {
-        LOG.trace(this + ": can't construct BlockReaderLocalLegacy because " +
-            "the address " + inetSocketAddress + " is not local");
+        LOG.trace(this + ": can't construct BlockReaderLocalLegacy because neither " +
+            "the storage media where the block resides is shared " +
+            "nor the address " + inetSocketAddress + " is local");
       }
       return null;
     }
