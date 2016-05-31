@@ -31,12 +31,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.annotations.VisibleForTesting;
+
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.DF;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.StorageType;
+import org.apache.hadoop.hdfs.StorageTypeModifier;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.datanode.DataStorage;
 import org.apache.hadoop.hdfs.server.datanode.DatanodeUtil;
@@ -57,6 +59,7 @@ public class FsVolumeImpl implements FsVolumeSpi {
   private final FsDatasetImpl dataset;
   private final String storageID;
   private final StorageType storageType;
+  private final StorageTypeModifier storageTypeModifier;
   private final Map<String, BlockPoolSlice> bpSlices
       = new ConcurrentHashMap<String, BlockPoolSlice>();
   private final File currentDir;    // <StorageDirectory>/current
@@ -80,7 +83,8 @@ public class FsVolumeImpl implements FsVolumeSpi {
   protected ThreadPoolExecutor cacheExecutor;
   
   FsVolumeImpl(FsDatasetImpl dataset, String storageID, File currentDir,
-      Configuration conf, StorageType storageType) throws IOException {
+      Configuration conf, StorageType storageType,
+      StorageTypeModifier storageTypeModifier) throws IOException {
     this.dataset = dataset;
     this.storageID = storageID;
     this.reserved = conf.getLong(
@@ -91,6 +95,7 @@ public class FsVolumeImpl implements FsVolumeSpi {
     File parent = currentDir.getParentFile();
     this.usage = new DF(parent, conf);
     this.storageType = storageType;
+    this.storageTypeModifier = storageTypeModifier;
     this.configuredCapacity = -1;
     cacheExecutor = initializeCacheExecutor(parent);
   }
@@ -427,8 +432,14 @@ public class FsVolumeImpl implements FsVolumeSpi {
     return storageType;
   }
   
+  @Override
+  public StorageTypeModifier getStorageTypeModifier() {
+    return storageTypeModifier;
+  }
+  
   DatanodeStorage toDatanodeStorage() {
-    return new DatanodeStorage(storageID, DatanodeStorage.State.NORMAL, storageType);
+    return new DatanodeStorage(storageID, DatanodeStorage.State.NORMAL,
+                              storageType, storageTypeModifier);
   }
 }
 

@@ -138,7 +138,7 @@ public class TestDFSUtil {
     ds[0] = d;
     
     ExtendedBlock b1 = new ExtendedBlock("bpid", 1, 1, 1);
-    LocatedBlock l1 = new LocatedBlock(b1, ds, null, null, 0, false, null);
+    LocatedBlock l1 = new LocatedBlock(b1, ds, null, null, null, 0, false, null);
     final DatanodeInfo[] cachedLocs = l1.getCachedLocations();
     assertTrue(cachedLocs.length == 0);
   }

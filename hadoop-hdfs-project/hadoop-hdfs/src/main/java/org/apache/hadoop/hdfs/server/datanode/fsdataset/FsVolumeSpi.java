@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.hadoop.hdfs.StorageType;
+import org.apache.hadoop.hdfs.StorageTypeModifier;
 
 /**
  * This is an interface for the underlying volume.
@@ -45,6 +46,8 @@ public interface FsVolumeSpi {
   public File getFinalizedDir(String bpid) throws IOException;
   
   public StorageType getStorageType();
+  
+  public StorageTypeModifier getStorageTypeModifier();
 
   /**
    * Reserve disk space for an RBW block so a writer does not run out of

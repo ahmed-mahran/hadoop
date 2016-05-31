@@ -1034,11 +1034,12 @@ public class DFSTestUtil {
 
   public static DatanodeStorageInfo[] createDatanodeStorageInfos(
       int n, String[] racks, String[] hostnames) {
-    return createDatanodeStorageInfos(n, racks, hostnames, null);
+    return createDatanodeStorageInfos(n, racks, hostnames, null, null);
   }
 
   public static DatanodeStorageInfo[] createDatanodeStorageInfos(
-      int n, String[] racks, String[] hostnames, StorageType[] types) {
+      int n, String[] racks, String[] hostnames, StorageType[] types,
+      StorageTypeModifier[] typeModifiers) {
     DatanodeStorageInfo[] storages = new DatanodeStorageInfo[n];
     for(int i = storages.length; i > 0; ) {
       final String storageID = "s" + i;
@@ -1048,8 +1049,10 @@ public class DFSTestUtil {
       final String hostname = (hostnames!=null && i < hostnames.length)? hostnames[i]: "host";
       final StorageType type = (types != null && i < types.length) ? types[i]
           : StorageType.DEFAULT;
+      final StorageTypeModifier typeModifier = (typeModifiers != null && i < typeModifiers.length) ? typeModifiers[i]
+          : StorageTypeModifier.DEFAULT;
       storages[i] = createDatanodeStorageInfo(storageID, ip, rack, hostname,
-          type);
+          type, typeModifier);
     }
     return storages;
   }
@@ -1057,14 +1060,14 @@ public class DFSTestUtil {
   public static DatanodeStorageInfo createDatanodeStorageInfo(
       String storageID, String ip, String rack, String hostname) {
     return createDatanodeStorageInfo(storageID, ip, rack, hostname,
-        StorageType.DEFAULT);
+        StorageType.DEFAULT, StorageTypeModifier.DEFAULT);
   }
 
   public static DatanodeStorageInfo createDatanodeStorageInfo(
       String storageID, String ip, String rack, String hostname,
-      StorageType type) {
+      StorageType type, StorageTypeModifier storageTypeModifier) {
     final DatanodeStorage storage = new DatanodeStorage(storageID,
-        DatanodeStorage.State.NORMAL, type);
+        DatanodeStorage.State.NORMAL, type, storageTypeModifier);
     final DatanodeDescriptor dn = BlockManagerTestUtil.getDatanodeDescriptor(
         ip, rack, storage, hostname);
     return BlockManagerTestUtil.newDatanodeStorageInfo(dn, storage);

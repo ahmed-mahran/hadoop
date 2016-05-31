@@ -26,6 +26,7 @@ import org.apache.commons.logging.Log;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.ha.HAServiceProtocol.HAServiceState;
 import org.apache.hadoop.hdfs.StorageType;
+import org.apache.hadoop.hdfs.StorageTypeModifier;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
@@ -215,10 +216,11 @@ class BPOfferService {
   }
   
   void reportBadBlocks(ExtendedBlock block,
-                       String storageUuid, StorageType storageType) {
+                       String storageUuid, StorageType storageType,
+                       StorageTypeModifier storageTypeModifier) {
     checkBlock(block);
     for (BPServiceActor actor : bpServices) {
-      actor.reportBadBlocks(block, storageUuid, storageType);
+      actor.reportBadBlocks(block, storageUuid, storageType, storageTypeModifier);
     }
   }
   

@@ -18,6 +18,7 @@
 package org.apache.hadoop.hdfs.server.protocol;
 
 import org.apache.hadoop.hdfs.StorageType;
+import org.apache.hadoop.hdfs.StorageTypeModifier;
 
 import java.util.UUID;
 
@@ -47,18 +48,21 @@ public class DatanodeStorage {
   private final String storageID;
   private final State state;
   private final StorageType storageType;
+  private final StorageTypeModifier storageTypeModifier;
 
   /**
-   * Create a storage with {@link State#NORMAL} and {@link StorageType#DEFAULT}.
+   * Create a storage with {@link State#NORMAL}, {@link StorageType#DEFAULT}
+   *  and {@link StorageTypeModifier#DEFAULT}.
    */
   public DatanodeStorage(String storageID) {
-    this(storageID, State.NORMAL, StorageType.DEFAULT);
+    this(storageID, State.NORMAL, StorageType.DEFAULT, StorageTypeModifier.DEFAULT);
   }
 
-  public DatanodeStorage(String sid, State s, StorageType sm) {
+  public DatanodeStorage(String sid, State s, StorageType sm, StorageTypeModifier stm) {
     this.storageID = sid;
     this.state = s;
     this.storageType = sm;
+    this.storageTypeModifier = stm;
   }
 
   public String getStorageID() {
@@ -71,6 +75,10 @@ public class DatanodeStorage {
 
   public StorageType getStorageType() {
     return storageType;
+  }
+  
+  public StorageTypeModifier getStorageTypeModifier() {
+    return storageTypeModifier;
   }
 
   /**
@@ -85,7 +93,7 @@ public class DatanodeStorage {
 
   @Override
   public String toString() {
-    return "DatanodeStorage["+ storageID + "," + storageType + "," + state +"]";
+    return "DatanodeStorage["+ storageID + "," + storageType + "," + storageTypeModifier + "," + state +"]";
   }
   
   @Override

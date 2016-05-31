@@ -20,6 +20,7 @@ package org.apache.hadoop.hdfs.server.protocol;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.hdfs.StorageType;
+import org.apache.hadoop.hdfs.StorageTypeModifier;
 import org.apache.hadoop.hdfs.protocol.Block;
 
 /**
@@ -39,14 +40,17 @@ public class BlocksWithLocations {
     final String[] datanodeUuids;
     final String[] storageIDs;
     final StorageType[] storageTypes;
+    final StorageTypeModifier[] storageTypeModifiers;
     
     /** constructor */
     public BlockWithLocations(Block block, String[] datanodeUuids,
-        String[] storageIDs, StorageType[] storageTypes) {
+        String[] storageIDs, StorageType[] storageTypes,
+        StorageTypeModifier[] storageTypeModifiers) {
       this.block = block;
       this.datanodeUuids = datanodeUuids;
       this.storageIDs = storageIDs;
       this.storageTypes = storageTypes;
+      this.storageTypeModifiers = storageTypeModifiers;
     }
     
     /** get the block */
@@ -68,6 +72,11 @@ public class BlocksWithLocations {
     public StorageType[] getStorageTypes() {
       return storageTypes;
     }
+    
+    /** @return the storage type modifiers */
+    public StorageTypeModifier[] getStorageTypeModifiers() {
+      return storageTypeModifiers;
+    }
 
     @Override
     public String toString() {
@@ -85,7 +94,8 @@ public class BlocksWithLocations {
     }
     
     private StringBuilder appendString(int i, StringBuilder b) {
-      return b.append("[").append(storageTypes[i]).append("]")
+      return b.append("[").append(storageTypes[i])
+              .append("+").append(storageTypeModifiers[i]).append("]")
               .append(storageIDs[i])
               .append("@").append(datanodeUuids[i]);
     }

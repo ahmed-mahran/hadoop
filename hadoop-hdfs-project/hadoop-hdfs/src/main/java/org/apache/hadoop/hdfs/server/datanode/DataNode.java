@@ -938,7 +938,8 @@ public class DataNode extends ReconfigurableBase
     BPOfferService bpos = getBPOSForBlock(block);
     FsVolumeSpi volume = getFSDataset().getVolume(block);
     bpos.reportBadBlocks(
-        block, volume.getStorageID(), volume.getStorageType());
+        block, volume.getStorageID(), volume.getStorageType(),
+        volume.getStorageTypeModifier());
   }
 
   /**
@@ -1795,7 +1796,8 @@ public class DataNode extends ReconfigurableBase
       FsVolumeSpi volume = getFSDataset().getVolume(block);
       // Shorter on-disk len indicates corruption so report NN the corrupt block
       bpos.reportBadBlocks(
-          block, volume.getStorageID(), volume.getStorageType());
+          block, volume.getStorageID(), volume.getStorageType(),
+          volume.getStorageTypeModifier());
       LOG.warn("Can't replicate block " + block
           + " because on-disk length " + onDiskLength 
           + " is shorter than NameNode recorded length " + block.getNumBytes());

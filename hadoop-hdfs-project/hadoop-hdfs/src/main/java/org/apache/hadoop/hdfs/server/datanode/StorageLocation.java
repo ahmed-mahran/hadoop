@@ -19,7 +19,6 @@
 package org.apache.hadoop.hdfs.server.datanode;
 
 import java.util.regex.Pattern;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -27,6 +26,7 @@ import java.util.regex.Matcher;
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.hdfs.StorageType;
+import org.apache.hadoop.hdfs.StorageTypeModifier;
 import org.apache.hadoop.hdfs.server.common.Util;
 
 /**
@@ -38,16 +38,18 @@ import org.apache.hadoop.hdfs.server.common.Util;
 @InterfaceAudience.Private
 public class StorageLocation {
   final StorageType storageType;
+  final StorageTypeModifier storageTypeModifier;
   final File file;
 
   /** Regular expression that describes a storage uri with a storage type.
    *  e.g. [Disk]/storages/storage1/
    */
-  private static final Pattern regex = Pattern.compile("^\\[(\\w*)\\](.+)$");
+  private static final Pattern regex = Pattern.compile("^\\[(\\w*)(?:\\+(\\w+))?\\](.+)$");
 
-  private StorageLocation(StorageType storageType, URI uri) {
+  private StorageLocation(StorageType storageType, StorageTypeModifier storageTypeModifier, URI uri) {
     this.storageType = storageType;
-
+    this.storageTypeModifier = storageTypeModifier;
+    
     if (uri.getScheme() == null ||
         "file".equalsIgnoreCase(uri.getScheme())) {
       // drop any (illegal) authority in the URI for backwards compatibility
@@ -59,6 +61,10 @@ public class StorageLocation {
 
   public StorageType getStorageType() {
     return this.storageType;
+  }
+  
+  public StorageTypeModifier getStorageTypeModifier() {
+    return this.storageTypeModifier;
   }
 
   URI getUri() {
@@ -82,21 +88,30 @@ public class StorageLocation {
       throws IOException, SecurityException {
     Matcher matcher = regex.matcher(rawLocation);
     StorageType storageType = StorageType.DEFAULT;
+    StorageTypeModifier storageTypeModifier = StorageTypeModifier.DEFAULT;
     String location = rawLocation;
 
     if (matcher.matches()) {
       String classString = matcher.group(1);
-      location = matcher.group(2);
+      String modifier = matcher.group(2);
+      location = matcher.group(3);
       if (!classString.isEmpty()) {
         storageType = StorageType.valueOf(classString.toUpperCase());
       }
+      if (modifier != null) {
+        storageTypeModifier = StorageTypeModifier.valueOf(modifier.toUpperCase());
+      }
     }
 
-    return new StorageLocation(storageType, Util.stringAsURI(location));
+    return new StorageLocation(storageType, storageTypeModifier, Util.stringAsURI(location));
   }
 
   @Override
   public String toString() {
-    return "[" + storageType + "]" + file.toURI();
+    if (!storageTypeModifier.equals(StorageTypeModifier.NONE)) {
+      return "[" + storageType + "+" + storageTypeModifier + "]" + file.toURI();
+    } else {
+      return "[" + storageType + "]" + file.toURI();
+    }
   }
 }

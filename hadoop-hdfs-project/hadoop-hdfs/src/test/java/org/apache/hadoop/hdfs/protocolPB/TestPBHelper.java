@@ -33,6 +33,7 @@ import org.apache.hadoop.fs.permission.AclStatus;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.StorageType;
+import org.apache.hadoop.hdfs.StorageTypeModifier;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
@@ -171,6 +172,7 @@ public class TestPBHelper {
     assertThat(dns2.getStorageID(), is(dns1.getStorageID()));
     assertThat(dns2.getState(), is(dns1.getState()));
     assertThat(dns2.getStorageType(), is(dns1.getStorageType()));
+    assertThat(dns2.getStorageTypeModifier(), is(dns1.getStorageTypeModifier()));
   }
 
   @Test
@@ -186,8 +188,10 @@ public class TestPBHelper {
     final String[] storageIDs = {"s1", "s2", "s3"};
     final StorageType[] storageTypes = {
         StorageType.DISK, StorageType.DISK, StorageType.DISK};
+    final StorageTypeModifier[] storageTypeModifiers = {
+        StorageTypeModifier.SHARED, StorageTypeModifier.NONE, StorageTypeModifier.NONE};
     return new BlockWithLocations(new Block(bid, 0, 1),
-        datanodeUuids, storageIDs, storageTypes);
+        datanodeUuids, storageIDs, storageTypes, storageTypeModifiers);
   }
 
   private void compare(BlockWithLocations locs1, BlockWithLocations locs2) {
@@ -459,9 +463,15 @@ public class TestPBHelper {
         StorageType.DISK,
         StorageType.RAM_DISK
     };
+    StorageTypeModifier[] storageTypeModifiers = {
+        StorageTypeModifier.SHARED,
+        StorageTypeModifier.NONE,
+        StorageTypeModifier.SHARED,
+        StorageTypeModifier.NONE
+    };
     LocatedBlock lb = new LocatedBlock(
         new ExtendedBlock("bp12", 12345, 10, 53),
-        dnInfos, storageIDs, media, 5, false, new DatanodeInfo[]{});
+        dnInfos, storageIDs, media, storageTypeModifiers, 5, false, new DatanodeInfo[]{});
     lb.setBlockToken(new Token<BlockTokenIdentifier>(
         "identifier".getBytes(), "password".getBytes(), new Text("kind"),
         new Text("service")));
@@ -548,7 +558,8 @@ public class TestPBHelper {
   @Test
   public void TestConvertDatanodeStorage() {
     DatanodeStorage dns1 = new DatanodeStorage(
-        "id1", DatanodeStorage.State.NORMAL, StorageType.SSD);
+        "id1", DatanodeStorage.State.NORMAL, StorageType.SSD,
+        StorageTypeModifier.SHARED);
 
     DatanodeStorageProto proto = PBHelper.convert(dns1);
     DatanodeStorage dns2 = PBHelper.convert(proto);

@@ -569,6 +569,7 @@ implements ByteBufferReadable, CanSetDropBehind, CanSetReadahead,
       chosenNode = retval.info;
       InetSocketAddress targetAddr = retval.addr;
       StorageType storageType = retval.storageType;
+      StorageTypeModifier storageTypeModifier = retval.storageTypeModifier;
 
       try {
         ExtendedBlock blk = targetBlock.getBlock();
@@ -578,6 +579,7 @@ implements ByteBufferReadable, CanSetDropBehind, CanSetReadahead,
             setRemotePeerFactory(dfsClient).
             setDatanodeInfo(chosenNode).
             setStorageType(storageType).
+            setStorageTypeModifier(storageTypeModifier).
             setFileName(src).
             setBlock(blk).
             setBlockToken(accessToken).
@@ -933,8 +935,10 @@ implements ByteBufferReadable, CanSetDropBehind, CanSetReadahead,
       Collection<DatanodeInfo> ignoredNodes) throws IOException {
     DatanodeInfo[] nodes = block.getLocations();
     StorageType[] storageTypes = block.getStorageTypes();
+    StorageTypeModifier[] storageTypeModifiers = block.getStorageTypeModifiers();
     DatanodeInfo chosenNode = null;
     StorageType storageType = null;
+    StorageTypeModifier storageTypeModifier = null;
     if (nodes != null) {
       for (int i = 0; i < nodes.length; i++) {
         if (!deadNodes.containsKey(nodes[i])
@@ -944,6 +948,9 @@ implements ByteBufferReadable, CanSetDropBehind, CanSetReadahead,
           // index to get storage type.
           if (storageTypes != null && i < storageTypes.length) {
             storageType = storageTypes[i];
+          }
+          if (storageTypeModifiers != null && i < storageTypeModifiers.length) {
+            storageTypeModifier = storageTypeModifiers[i];
           }
           break;
         }
@@ -960,7 +967,7 @@ implements ByteBufferReadable, CanSetDropBehind, CanSetReadahead,
       DFSClient.LOG.debug("Connecting to datanode " + dnAddr);
     }
     InetSocketAddress targetAddr = NetUtils.createSocketAddr(dnAddr);
-    return new DNAddrPair(chosenNode, targetAddr, storageType);
+    return new DNAddrPair(chosenNode, targetAddr, storageType, storageTypeModifier);
   }
 
   private static String getBestNodeDNAddrPairErrorString(
@@ -1044,6 +1051,7 @@ implements ByteBufferReadable, CanSetDropBehind, CanSetReadahead,
       DatanodeInfo chosenNode = datanode.info;
       InetSocketAddress targetAddr = datanode.addr;
       StorageType storageType = datanode.storageType;
+      StorageTypeModifier storageTypeModifier = datanode.storageTypeModifier;
       BlockReader reader = null;
 
       try {
@@ -1055,6 +1063,7 @@ implements ByteBufferReadable, CanSetDropBehind, CanSetReadahead,
             setRemotePeerFactory(dfsClient).
             setDatanodeInfo(chosenNode).
             setStorageType(storageType).
+            setStorageTypeModifier(storageTypeModifier).
             setFileName(src).
             setBlock(block.getBlock()).
             setBlockToken(blockToken).
@@ -1526,12 +1535,14 @@ implements ByteBufferReadable, CanSetDropBehind, CanSetReadahead,
     final DatanodeInfo info;
     final InetSocketAddress addr;
     final StorageType storageType;
+    final StorageTypeModifier storageTypeModifier;
 
     DNAddrPair(DatanodeInfo info, InetSocketAddress addr,
-        StorageType storageType) {
+        StorageType storageType, StorageTypeModifier storageTypeModifier) {
       this.info = info;
       this.addr = addr;
       this.storageType = storageType;
+      this.storageTypeModifier = storageTypeModifier;
     }
   }
 
